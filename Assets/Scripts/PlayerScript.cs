@@ -13,7 +13,15 @@ public class PlayerScript : MonoBehaviour
     private int scoreValue = 0;
     private int lives;
     public GameObject player;
- 
+    public float hozMovement;
+    public float vertMovement;
+    Animator anim;
+    private bool facingRight = true;
+    //public bool isJumping = false;
+    public AudioClip musicClipTwo;
+    public AudioSource musicSource;
+    public bool onGround = true; 
+
     // Start is called before the first frame update
     void Start()
     {
@@ -22,61 +30,136 @@ public class PlayerScript : MonoBehaviour
         winText.text = "";
         lives = 3;
         livesText.text = "Lives: " + lives.ToString();
+        anim = GetComponent<Animator>();
     }
- 
-    // I had a ton of trouble here but things finally work, thank god
+
+    //Constantly checks this block of code for various things, such as movement.
     void FixedUpdate()
     {
         float hozMovement = Input.GetAxis("Horizontal");
         float vertMovement = Input.GetAxis("Vertical");
-        rd2d.AddForce(new Vector2(hozMovement * speed, vertMovement * speed));
+        rd2d.AddForce(new Vector2(hozMovement * speed, vertMovement * speed));  
+        
+    if (facingRight == false && hozMovement > 0)
+        {
+        Flip();
+        }
+
+    else if (facingRight == true && hozMovement < 0)
+        {
+        Flip();
+        }
+    }   
+    
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.W) && onGround)
+        {
+            onGround = false;
+            anim.SetInteger("State", 3);
+        }
+
+        if (Input.GetKeyUp(KeyCode.W) && onGround)
+
+        {
+            anim.SetInteger("State", 0);
+        }
+
+        if (Input.GetKeyDown(KeyCode.A) && onGround)
+
+        {
+            anim.SetInteger("State", 1);
+        }
+
+        if (Input.GetKeyDown(KeyCode.D) && onGround)
+
+        {
+            anim.SetInteger("State", 1);
+        }
+        
+        if ((Input.GetKeyUp(KeyCode.D) || Input.GetKeyUp(KeyCode.A)) && onGround)
+
+        {
+            anim.SetInteger("State", 0);
+        }
+       
+        else if (onGround != true)
+        {
+            anim.SetInteger("State", 3);
+        }
+
+    //Checks to see if sprite should be flipped.
+        if (Input.GetKey("escape"))
+        {
+            Application.Quit();
+        } 
     }
- 
+
+    //This will check for whether or not the player has interacted with an entity.
     private void OnCollisionEnter2D(Collision2D collision)
     {
-       if (collision.collider.tag == "Coin")
+        //Checks for coins
+        if (collision.collider.tag == "Coin")
         {
-            scoreValue += 1;
-            score.text = "Score: " + scoreValue.ToString();
+            //checks if the player is still on the first stage by checking the coin count.
+            if (scoreValue < 4) {
+                scoreValue += 1;
+                score.text = "Score: " + scoreValue.ToString();
+            //if you are on the second level, use the modified score display.
+            } else {
+                scoreValue += 1;
+                score.text = "Score: " + (scoreValue - 5).ToString();
+            }
             Destroy(collision.collider.gameObject);
             SetScoreText ();
         }
-
+        //checks for enemies
         if (collision.collider.tag == "Enemy")
         {
             lives -= 1;
             SetLivesText ();
             Destroy(collision.collider.gameObject);
         }
- 
+        //If the score is 4, warp player to new level and reset the point counter.
+        if (scoreValue == 4) 
+        {
+        transform.position = new Vector3(42.7f, 0.0f, 0f); 
+        scoreValue +=1;
+        score.text = "Score: " + (scoreValue - 5).ToString();
+        lives = 3;
+        SetLivesText ();
+        }
     }
- 
+    
+    //Check if you're colliding with the ground.
     private void OnCollisionStay2D(Collision2D collision)
     {
         if (collision.collider.tag == "Ground")
-        {
+        {   
+            onGround = true;
+
             if (Input.GetKey(KeyCode.W))
             {
-                rd2d.AddForce(new Vector2(0, 3), ForceMode2D.Impulse);
+                rd2d.AddForce(new Vector2(0, 3), ForceMode2D.Impulse); 
             }
-            
-            if (Input.GetKey("escape"))
-            {
-            Application.Quit();
-            }
-        }
+        }     
     }
 
-    private void SetScoreText ()
+
+    //Checks for the win condition.
+    public void SetScoreText()
     {
-        if (scoreValue == 4)
+        if (scoreValue == 9)
         {
             winText.text = "You win! Game created by Chase Rook.";
+            musicSource.clip = musicClipTwo;
+            musicSource.Play();
+            musicSource.loop = false;
         }
-    
     }
 
-      void SetLivesText ()
+    //Checks for life count.
+    void SetLivesText()
     {
         livesText.text = "Lives: " + lives.ToString ();
         if (lives <= 0)
@@ -85,7 +168,14 @@ public class PlayerScript : MonoBehaviour
             winText.text = "You lose! Game created by Chase Rook.";
         }
     }
+
+    //Checks to see if sprite should be flipped.
+    void Flip()
+    {
+        facingRight = !facingRight;
+        Vector2 Scaler = transform.localScale;
+        Scaler.x = Scaler.x * -1;
+        transform.localScale = Scaler;
+    } 
 }
-
-
 
